@@ -2,6 +2,16 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
+
+#if defined(_WIN32)
+  #include <direct.h>
+  static int mk_dir(const char* path) { return _mkdir(path); }
+#else
+  #include <sys/stat.h>
+  #include <sys/types.h>
+  static int mk_dir(const char* path) { return mkdir(path, 0777); }
+#endif
 
 #include "../common/include/aer_cfg.h"
 #include "../common/include/aer_types.h"
@@ -10,7 +20,7 @@
 
 #include "../host/aer_tx_model.h"
 
-/* --- Forward declarations for host/aer_rx_replay.c --- */
+/* --- Forward declarations for host/aer_rx_replay.c (no header yet) --- */
 
 typedef bool (*aer_rx_fault_fn_t)(uint64_t t,
                                  aer_raw_word_t* io_data,
@@ -114,6 +124,42 @@ static void on_event(uint8_t row, uint8_t col, void* user)
     }
 }
 
+/* ---------------- trace dump helpers ---------------- */
+
+static void ensure_traces_dir(void)
+{
+    /* Try to create; ignore "already exists". */
+    if (mk_dir("traces") != 0) {
+        /* If it already exists, this is fine. */
+        /* On POSIX errno==EEXIST; on Windows it’s also nonzero. */
+        /* We won't hard-fail: fopen below will decide. */
+    }
+}
+
+static bool dump_waveform_trace(const char* path, const aer_waveform_t* wf)
+{
+    if (!path || !wf) return false;
+    FILE* f = fopen(path, "w");
+    if (!f) {
+        fprintf(stderr, "[WARN] Could not open trace file '%s' for writing: %s\n",
+                path, strerror(errno));
+        return false;
+    }
+
+    fprintf(f, "# t data_hex ack\n");
+    for (size_t i = 0; i < wf->len; ++i) {
+        const aer_tx_sample_t s = wf->samples[i];
+        /* print wide enough; plot_bursts.py accepts 0x... */
+        fprintf(f, "%llu 0x%08x %u\n",
+                (unsigned long long)s.t,
+                (unsigned)s.data,
+                (unsigned)(s.ack ? 1u : 0u));
+    }
+
+    fclose(f);
+    return true;
+}
+
 /* ---------------- helpers ---------------- */
 
 static void build_words_for_burst(aer_raw_word_t out_words[4])
@@ -158,7 +204,7 @@ static aer_raw_word_t make_multihot_mask_group0(aer_raw_word_t valid_raw)
 
 /* ---------------- tests ---------------- */
 
-static void test_replay_happy_path(void)
+static void test_replay_happy_path_and_dump_trace(void)
 {
     aer_raw_word_t words[4];
     build_words_for_burst(words);
@@ -174,6 +220,10 @@ static void test_replay_happy_path(void)
     bool ok = aer_tx_model_emit_words(&tx, words, 4u);
     TASSERT(ok);
     TASSERT(wf.len > 0u);
+
+    /* Dump waveform trace for plotting */
+    ensure_traces_dir();
+    (void)dump_waveform_trace("traces/replay_happy_waveform.txt", &wf);
 
     aer_burst_t burst;
     aer_burst_init(&burst);
@@ -224,17 +274,16 @@ static void test_replay_glitch_invalid_word_ignored(void)
     bool ok = aer_tx_model_emit_words(&tx, words, 4u);
     TASSERT(ok);
 
-    /* Fault: inject a multi-hot glitch exactly at the ACK rise time for the second word (COL=3).
-       Timeline with defaults:
-         word0 ack rises at t=1
-         word1 ack rises at t=3
-         word2 ack rises at t=5
-         word3 ack rises at t=7
-     */
+    /* Defaults timeline:
+       word0 ack rises at t=1
+       word1 ack rises at t=3
+       word2 ack rises at t=5
+       word3 ack rises at t=7
+    */
     aer_fault_glitch_t glitch;
     glitch.start_t = 3u;
     glitch.end_t   = 3u;
-    glitch.xor_mask = make_multihot_mask_group0(words[1]); /* cause invalid 1-of-4 */
+    glitch.xor_mask = make_multihot_mask_group0(words[1]);
 
     aer_burst_t burst;
     aer_burst_init(&burst);
@@ -281,7 +330,7 @@ static void test_replay_ack_stuck_high_prevents_progress(void)
     bool ok = aer_tx_model_emit_words(&tx, words, 4u);
     TASSERT(ok);
 
-    /* Force ACK stuck high starting at t>=2 (i.e., prevent falling after first word). */
+    /* Force ACK stuck high starting at t>=2 (prevent falling after first word). */
     aer_fault_stuck_ack_t stuck;
     stuck.start_t = 2u;
     stuck.level   = true;
@@ -318,12 +367,13 @@ static void test_replay_ack_stuck_high_prevents_progress(void)
 
 int main(void)
 {
-    test_replay_happy_path();
+    test_replay_happy_path_and_dump_trace();
     test_replay_glitch_invalid_word_ignored();
     test_replay_ack_stuck_high_prevents_progress();
 
     if (g_failures == 0) {
         printf("[PASS] test_replay\n");
+        printf("Trace written (if possible): traces/replay_happy_waveform.txt\n");
         return 0;
     }
 
