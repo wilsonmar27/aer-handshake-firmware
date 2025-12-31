@@ -22,9 +22,16 @@ TEST_BURST_SRC := tests/test_burst.c
 TEST_CODEC_BIN := $(BIN)/test_codec
 TEST_BURST_BIN := $(BIN)/test_burst
 
+HOST_SRCS := host/aer_tx_model.c \
+             host/aer_rx_replay.c
+
+TEST_REPLAY_SRC := tests/test_replay.c
+TEST_REPLAY_BIN := $(BIN)/test_replay
+
+
 .PHONY: all test run clean dirs
 
-all: dirs $(TEST_CODEC_BIN) $(TEST_BURST_BIN)
+all: dirs $(TEST_CODEC_BIN) $(TEST_BURST_BIN) $(TEST_REPLAY_BIN)
 
 dirs:
 	@mkdir -p $(BIN) $(OBJ)
@@ -36,14 +43,20 @@ $(TEST_CODEC_BIN): $(TEST_CODEC_SRC) $(COMMON_SRCS)
 $(TEST_BURST_BIN): $(TEST_BURST_SRC) $(COMMON_SRCS)
 	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@
 
+$(TEST_REPLAY_BIN): $(TEST_REPLAY_SRC) $(COMMON_SRCS) $(HOST_SRCS)
+	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@
+
 # --- run tests ---
 test: all run
+
 
 run:
 	@echo "== Running codec tests =="
 	@$(TEST_CODEC_BIN)
 	@echo "== Running burst tests =="
 	@$(TEST_BURST_BIN)
+	@echo "== Running replay tests =="
+	@$(TEST_REPLAY_BIN)
 
 clean:
 	@rm -rf $(BUILD)
