@@ -3,7 +3,7 @@ Firmware implementation of a general AER (Address-Event Representation) request/
 
 ## 1) Scope and Goals
 
-**Primary goal:** Robustly receive AER traffic over a (Delay Innsensitive) DI handshake link, decode addresses, and output a stream of events (row, col, polarity/timestamp optional).
+**Primary goal:** Robustly receive AER traffic over a (Delay Innsensitive) DI handshake link, decode addresses, and output a stream of events (row, col).
 
 **Design goals:**
 - Keep protocol logic **platform-agnostic** (unit-testable on a host PC).
@@ -24,7 +24,7 @@ Firmware implementation of a general AER (Address-Event Representation) request/
 
 - All signals are digital CMOS-level.
 - `DATA` is considered **valid** when it encodes a non-neutral 1-of-4 code in each group (see Section 3).
-- `DATA` is considered **neutral** when **all 12 lines are low**.
+- `DATA` is considered **neutral** when **all data-bus lines are low**.
 - `ACK` is driven actively (push-pull) by the receiver.
 
 
