@@ -1,0 +1,14 @@
+# codec_valid.txt
+# Format per line:
+#   <name> <raw_hex> <expect_ok 0|1> <expect_payload_dec> <expect_tail 0|1> <expect_err_mask_hex>
+#
+# These vectors are for the default 12-bit bus (3 groups of 1-of-4).
+# raw_hex is the packed DATA[11:0] value.
+
+PAYLOAD_0     111  1  0   0  0
+PAYLOAD_1     112  1  1   0  0
+ROW_5         122  1  5   0  0
+COL_3         118  1  3   0  0
+COL_7         128  1  7   0  0
+PAYLOAD_31    288  1  31  0  0
+TAIL_63       888  1  63  1  0
