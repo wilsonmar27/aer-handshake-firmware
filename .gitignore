@@ -56,7 +56,8 @@ dkms.conf
 
 # vscode settings
 .vscode/*
+pico/.vscode/*
 
 # Pico sdk specific files
-build/*
+pico/build/*
 pico_sdk_import.cmake
