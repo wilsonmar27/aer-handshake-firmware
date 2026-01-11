@@ -56,8 +56,8 @@ dkms.conf
 
 # vscode settings
 .vscode/*
-pico/.vscode/*
+pico_aer_rx/.vscode/*
 
 # Pico sdk specific files
-pico/build/*
+pico_aer_rx/build/*
 pico_sdk_import.cmake
