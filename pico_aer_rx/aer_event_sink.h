@@ -60,7 +60,7 @@ const aer_event_sink_stats_t *aer_event_sink_stats(const aer_event_sink_t *sink)
  * If your common parser expects a different callback type, write a tiny adapter
  * that calls this function.
  */
-void aer_event_sink_on_event(uint16_t row, uint16_t col, void *user);
+void aer_event_sink_on_event(uint8_t row, uint8_t col, void *user);
 
 #ifdef __cplusplus
 } // extern "C"

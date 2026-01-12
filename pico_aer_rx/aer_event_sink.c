@@ -38,7 +38,7 @@ const aer_event_sink_stats_t *aer_event_sink_stats(const aer_event_sink_t *sink)
     return sink ? &sink->stats : (const aer_event_sink_stats_t *)0;
 }
 
-void aer_event_sink_on_event(uint16_t row, uint16_t col, void *user)
+void aer_event_sink_on_event(uint8_t row, uint8_t col, void *user)
 {
     aer_event_sink_t *sink = (aer_event_sink_t *)user;
     if (!sink) return;
@@ -46,7 +46,6 @@ void aer_event_sink_on_event(uint16_t row, uint16_t col, void *user)
     sink->stats.events_emitted++;
 
     if (!sink->cfg.enabled) {
-        // Treat as "not sent" but not an error: you're intentionally disabled.
         sink->stats.usb_send_failed++;
         return;
     }
