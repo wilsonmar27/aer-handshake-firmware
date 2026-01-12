@@ -1,4 +1,4 @@
-// pico/aer_rx_poll.h
+// aer_rx_poll.h
 #pragma once
 
 #include <stdint.h>

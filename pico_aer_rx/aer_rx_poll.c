@@ -1,4 +1,4 @@
-// pico/aer_rx_poll.c
+// aer_rx_poll.c
 #include "aer_rx_poll.h"
 
 #include "hal_gpio.h"
