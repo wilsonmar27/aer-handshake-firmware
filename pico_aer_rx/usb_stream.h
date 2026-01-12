@@ -23,7 +23,7 @@ extern "C" {
 /* --- Stream payload versions / record types (inside HAL_STREAM_EVENT_BIN) --- */
 typedef enum usb_stream_event_rec_type_e {
     USB_EVT_REC_V1_NOTS = 1,  // row/col + flags (no timestamp)
-    USB_EVT_REC_V1_TS   = 2,  // row/col + flags + t_us
+    USB_EVT_REC_V1_TICKS  = 2,  // row/col + flags + t_ticks (cycle counter)
 } usb_stream_event_rec_type_t;
 
 /* --- Flags inside event payload (yours to extend) --- */
@@ -35,13 +35,12 @@ enum {
 typedef struct usb_stream_stats_s {
     uint32_t events_sent;
     uint32_t events_dropped_not_connected;
-    uint32_t hello_sent;
 } usb_stream_stats_t;
 
+/* --- Configuration structure --- */
 typedef struct usb_stream_cfg_s {
-    bool     timestamps_enabled;   // if true, emit USB_EVT_REC_V1_TS records
-    bool     send_hello_on_init;   // if true, emits hello marker/descriptor from init
-    uint8_t  data_width_bits;      // for hello (12 in your case)
+    bool     timestamps_enabled;  // true => USB_EVT_REC_V1_TICKS
+    uint8_t  data_width_bits;     // for metadata
 } usb_stream_cfg_t;
 
 /** Initialize the stream wrapper (does not init USB itself; call hal_stdio_init() first). */
@@ -52,9 +51,6 @@ void usb_stream_set_timestamps_enabled(bool enabled, bool send_hello);
 
 /** Get the active record type used for events. */
 usb_stream_event_rec_type_t usb_stream_event_record_type(void);
-
-/** Send a HELLO descriptor packet (binary) + a short human marker (text). */
-bool usb_stream_send_hello(void);
 
 /**
  * Send one ON event (row,col). Flags will include USB_EVT_FLAG_ON.
