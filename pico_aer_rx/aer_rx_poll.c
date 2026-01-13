@@ -44,27 +44,21 @@ void aer_rx_poll_reset(aer_rx_poll_t *rx)
  */
 aer_rx_poll_status_t aer_rx_poll_step(aer_rx_poll_t *rx)
 {
-    if (!rx || !rx->rb) {
-        while (1) { tight_loop_contents(); }
-    }
-
-    // Backpressure: if no space, do not ACK; transmitter will hold DATA valid.
-    if (ringbuf_u32_is_full(rx->rb)) {
-        rx->stats.no_space++;
-        return AER_RX_POLL_NO_SPACE;
-    }
-
     // Ensure ACK is low before starting a new receive.
     hal_gpio_ack_deassert();
 
-    // 1) Wait for DATA != 0
-    uint64_t deadline = hal_time_deadline_us(rx->wait_valid_timeout_us);
-    uint32_t raw = 0;
+    // 1) wait DATA != 0 (forever if timeout==0)
+    uint64_t deadline = 0;
+    if (rx->wait_valid_timeout_us != 0u) {
+        deadline = hal_time_deadline_us(rx->wait_valid_timeout_us);
+    }
 
+    uint32_t raw = 0;
     for (;;) {
         raw = hal_gpio_read_data_raw();
-        if (data_is_valid(raw)) break;
-        if (hal_time_expired(deadline)) {
+        if (raw != 0u) break;
+
+        if (rx->wait_valid_timeout_us != 0u && hal_time_expired(deadline)) {
             rx->stats.timeouts_valid++;
             return AER_RX_POLL_TIMEOUT_WAIT_VALID;
         }
@@ -73,28 +67,35 @@ aer_rx_poll_status_t aer_rx_poll_step(aer_rx_poll_t *rx)
 
     const aer_raw_word_t word = (aer_raw_word_t)raw;
 
-    // 2) Assert ACK as soon as we've latched the raw word.
+    // 2) assert ACK immediately after latch
     hal_gpio_ack_assert();
 
-    // 3) Push into ring buffer (should succeed; we checked fullness above).
-    //    If it fails anyway, we still keep protocol moving.
-    (void)ringbuf_u32_push(rx->rb, (uint32_t)word);
+    // 3) push OR drop (but always continue handshake)
+    if (ringbuf_u32_is_full(rx->rb)) {
+        rx->stats.dropped_full++;
+    } else {
+        (void)ringbuf_u32_push(rx->rb, (uint32_t)word);
+    }
 
-    // 4) Wait for DATA == 0 (neutral)
-    deadline = hal_time_deadline_us(rx->wait_neutral_timeout_us);
+    // 4) wait for neutral (optional timeout; disabled if 0)
+    if (rx->wait_neutral_timeout_us != 0u) {
+        deadline = hal_time_deadline_us(rx->wait_neutral_timeout_us);
+    }
+
     for (;;) {
         raw = hal_gpio_read_data_raw();
-        if (data_is_neutral(raw)) break;
-        if (hal_time_expired(deadline)) {
-            // Try to recover: drop ACK so link can return to idle.
-            hal_gpio_ack_deassert();
+        if (raw == 0u) break;
+
+        if (rx->wait_neutral_timeout_us != 0u && hal_time_expired(deadline)) {
             rx->stats.timeouts_neutral++;
+            // recovery: drop ACK and return
+            hal_gpio_ack_deassert();
             return AER_RX_POLL_TIMEOUT_WAIT_NEUTRAL;
         }
         tight_loop_contents();
     }
 
-    // 5) Deassert ACK
+    // 5) deassert ACK
     hal_gpio_ack_deassert();
 
     rx->stats.words_ok++;
@@ -119,11 +120,6 @@ uint32_t aer_rx_poll_service(aer_rx_poll_t *rx, uint32_t max_words, uint32_t tim
         if (st == AER_RX_POLL_OK) {
             ok++;
             continue;
-        }
-
-        // If we're out of space, don't spin here; let consumer drain.
-        if (st == AER_RX_POLL_NO_SPACE) {
-            break;
         }
 
         // On timeouts, return control to main so you can log / attempt recovery.

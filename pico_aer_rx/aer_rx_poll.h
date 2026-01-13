@@ -35,18 +35,22 @@ typedef enum aer_rx_poll_status_e {
 } aer_rx_poll_status_t;
 
 typedef struct aer_rx_poll_stats_s {
-    uint32_t words_ok;        // completed handshake + pushed
-    uint32_t timeouts_valid;  // timeouts waiting for DATA!=0
-    uint32_t timeouts_neutral;// timeouts waiting for DATA==0
-    uint32_t no_space;        // ringbuffer full stall events
+    uint32_t words_ok;         // completed handshake (ACK cycle completed)
+    uint32_t dropped_full;     // ring buffer full drops (still handshaked)
+    uint32_t timeouts_valid;   // only if enabled (see below)
+    uint32_t timeouts_neutral; // only if enabled (see below)
 } aer_rx_poll_stats_t;
+
 
 typedef struct aer_rx_poll_s {
     ringbuf_u32_t *rb;
 
     // Timeouts (us)
-    uint32_t wait_valid_timeout_us;   // how long to wait for DATA!=0
-    uint32_t wait_neutral_timeout_us; // how long to wait for DATA==0 after ACK
+    // wait_valid_timeout_us == 0   => wait forever (idle is not an error)
+    uint32_t wait_valid_timeout_us;
+
+    // wait_neutral_timeout_us == 0 => disabled (debug-only)
+    uint32_t wait_neutral_timeout_us;
 
     aer_rx_poll_stats_t stats;
 } aer_rx_poll_t;
