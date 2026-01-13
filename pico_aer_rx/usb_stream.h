@@ -46,8 +46,8 @@ typedef struct usb_stream_cfg_s {
 /** Initialize the stream wrapper (does not init USB itself; call hal_stdio_init() first). */
 void usb_stream_init(const usb_stream_cfg_t *cfg);
 
-/** Enable/disable timestamps going forward. Optionally emits a new hello descriptor. */
-void usb_stream_set_timestamps_enabled(bool enabled, bool send_hello);
+/** Enable/disable timestamps going forward */
+void usb_stream_set_timestamps_enabled(bool enabled);
 
 /** Get the active record type used for events. */
 usb_stream_event_rec_type_t usb_stream_event_record_type(void);
@@ -56,13 +56,13 @@ usb_stream_event_rec_type_t usb_stream_event_record_type(void);
  * Send one ON event (row,col). Flags will include USB_EVT_FLAG_ON.
  * Timestamp is included only if timestamps are enabled.
  */
-bool usb_stream_send_on_event(uint16_t row, uint16_t col);
+bool usb_stream_send_on_event(uint8_t row, uint8_t col);
 
 /**
  * If we ever want to send custom flags in the future, use this.
  * (Still treated as an "event" record.)
  */
-bool usb_stream_send_event(uint16_t row, uint16_t col, uint8_t flags);
+bool usb_stream_send_event(uint8_t row, uint8_t col, uint8_t flags);
 
 /** Get internal counters. */
 const usb_stream_stats_t *usb_stream_stats(void);

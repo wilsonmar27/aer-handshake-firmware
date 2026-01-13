@@ -79,7 +79,7 @@ bool usb_stream_send_event(uint8_t row, uint8_t col, uint8_t flags)
         e.flags    = flags;
         e.row      = row;
         e.col      = col;
-        e.t_ticks  = (uint32_t)hal_time_cycles_now();
+        e.t_ticks  = hal_cycles_now();
         ok = hal_stream_write(HAL_STREAM_EVENT_BIN, &e, (uint16_t)sizeof(e));
     } else {
         usb_evt_v1_nots_t e;
