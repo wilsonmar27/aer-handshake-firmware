@@ -1,0 +1,3 @@
+[libraries]
+
+fake_cam.files = ["fake_cam/hdl/**/*.vhd"]
