@@ -1,3 +1,4 @@
 [libraries]
 
 fake_cam.files = ["fake_cam/hdl/**/*.vhd"]
+fake_cam.exclude = ["fake_cam/hdl/ip/**/*.vhd"]

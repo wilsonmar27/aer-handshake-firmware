@@ -61,3 +61,8 @@ pico_aer_rx/.vscode/*
 # Pico sdk specific files
 pico_aer_rx/build/*
 pico_sdk_import.cmake
+
+# Vivado generated IP files
+fake_cam/hdl/ip/**/*
+!fake_cam/hdl/ip/**/*.xci
+!fake_cam/hdl/ip/**/
