@@ -58,7 +58,8 @@ dkms.conf
 .vscode/*
 pico_aer_rx/.vscode/*
 
-# Pico sdk specific files
+# build files
+build/*
 pico_aer_rx/build/*
 pico_sdk_import.cmake
 
