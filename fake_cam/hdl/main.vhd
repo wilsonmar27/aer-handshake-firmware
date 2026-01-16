@@ -124,6 +124,16 @@ BEGIN
         wr_rst_busy => OPEN,
         rd_rst_busy => OPEN
     );
+    aer_consumer : ENTITY work.aer_consumer
+        PORT MAP(
+            clk => aer_clk,
+            rst => rst,
+            no_events => fifo_empty,
+            ren => fifo_ren,
+            event => fifo_dout,
+            ack => ack,
+            data => data
+        );
 
     PROCESS (s, clk_div_cnt, event_encoder_valid, fifo_full, event_gen_rdy)
     BEGIN
@@ -183,7 +193,4 @@ BEGIN
             s <= s_next;
         END IF;
     END PROCESS;
-
-    fifo_ren <= '0';
-    data <= (OTHERS => '0');
 END ARCHITECTURE;

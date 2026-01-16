@@ -52,6 +52,18 @@ BEGIN
 
     PROCESS
     BEGIN
+        ack <= '0';
+        WAIT UNTIL data /= b"000000000000";
+        WAIT FOR aer_clk_period * 10;
+        ack <= '1';
+        -- WAIT FOR aer_clk_period * 10;
+        -- interestingly, a wait for before wait until will make the simulator miss the value update and stuck here 
+        WAIT UNTIL data = b"000000000000";
+        WAIT FOR aer_clk_period * 10;
+    END PROCESS;
+
+    PROCESS
+    BEGIN
         rst <= '1';
         WAIT FOR clk_period * 2;
         rst <= '0';
