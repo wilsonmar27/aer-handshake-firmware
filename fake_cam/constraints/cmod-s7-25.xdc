@@ -1,6 +1,7 @@
 ## 12 MHz System Clock
 set_property -dict { PACKAGE_PIN M9    IOSTANDARD LVCMOS33 } [get_ports { sys_clk }]; # IO_L13P_T2_MRCC_14 Sch=gclk
-create_clock -add -name sys_clk_pin -period 83.33 -waveform {0 41.66} [get_ports { sys_clk }];
+# will be created by Clocking Wizard IP from 12 MHz input clock specification
+# create_clock -add -name sys_clk_pin -period 83.33 -waveform {0 41.66} [get_ports { sys_clk }];
 
 ## Push Buttons
 set_property -dict { PACKAGE_PIN D2    IOSTANDARD LVCMOS33 } [get_ports { btn0 }]; # IO_L6P_T0_34 Sch=btn[0]
