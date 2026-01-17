@@ -19,7 +19,7 @@ END ENTITY;
 ARCHITECTURE arch OF aer_consumer IS
     SIGNAL event_encoding : STD_LOGIC_VECTOR(11 DOWNTO 0);
 
-    TYPE s_type IS (IDLE, WAIT_FOR_ACK, WAIT_FOR_NACK);
+    TYPE s_type IS (IDLE, WAIT_FOR_FIFO_READ, WAIT_FOR_ACK, WAIT_FOR_NACK);
     SIGNAL s : s_type := IDLE;
     SIGNAL s_next : s_type;
 BEGIN
@@ -44,22 +44,24 @@ BEGIN
     PROCESS (s, no_events, ack, event_encoding)
     BEGIN
         ren <= '0';
+        data <= (OTHERS => '0');
         s_next <= s;
 
         CASE s IS
             WHEN IDLE =>
-                data <= (OTHERS => '0');
                 IF no_events = '0' THEN
                     ren <= '1';
-                    s_next <= WAIT_FOR_ACK;
+                    s_next <= WAIT_FOR_FIFO_READ;
                 END IF;
+            WHEN WAIT_FOR_FIFO_READ =>
+                -- FIFO read data is ready later in the next cycle w.r.t. ren, thus wait for an extra cycle
+                s_next <= WAIT_FOR_ACK;
             WHEN WAIT_FOR_ACK =>
                 data <= event_encoding;
                 IF ack = '1' THEN
                     s_next <= WAIT_FOR_NACK;
                 END IF;
             WHEN WAIT_FOR_NACK =>
-                data <= (OTHERS => '0');
                 IF ack = '0' THEN
                     s_next <= IDLE;
                 END IF;
