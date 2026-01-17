@@ -37,7 +37,7 @@ BEGIN
             BALL_BOUNCER_CLK_DIV => 12000000,
             IMG_X => 32,
             IMG_Y => 32,
-            PX_IDX_LEN => 5,
+            PX_IDX_LEN => 10,
             BALL_INIT_X => 10,
             BALL_INIT_Y => 0,
             BALL_SIZE => 3
