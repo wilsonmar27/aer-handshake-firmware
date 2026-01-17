@@ -7,8 +7,8 @@ set_property -dict { PACKAGE_PIN M9    IOSTANDARD LVCMOS33 } [get_ports { sys_cl
 set_property -dict { PACKAGE_PIN D2    IOSTANDARD LVCMOS33 } [get_ports { btn0 }]; # IO_L6P_T0_34 Sch=btn[0]
 
 ## RGB LEDs
-#set_property -dict { PACKAGE_PIN F1    IOSTANDARD LVCMOS33 } [get_ports { led0_b }]; # IO_L10N_T1_34 Sch=led0_b
-#set_property -dict { PACKAGE_PIN D3    IOSTANDARD LVCMOS33 } [get_ports { led0_g }]; # IO_L9N_T1_DQS_34 Sch=led0_g
+set_property -dict { PACKAGE_PIN F1    IOSTANDARD LVCMOS33 } [get_ports { led0_b }]; # IO_L10N_T1_34 Sch=led0_b
+set_property -dict { PACKAGE_PIN D3    IOSTANDARD LVCMOS33 } [get_ports { led0_g }]; # IO_L9N_T1_DQS_34 Sch=led0_g
 set_property -dict { PACKAGE_PIN F2    IOSTANDARD LVCMOS33 } [get_ports { led0_r }]; # IO_L10P_T1_34 Sch=led0_r
 
 ## Dedicated Digital I/O on the PIO Headers

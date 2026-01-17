@@ -6,6 +6,8 @@ ENTITY top_cmod_s7_25 IS
         sys_clk : IN STD_LOGIC;
         btn0 : IN STD_LOGIC;
         led0_r : OUT STD_LOGIC;
+        led0_g : OUT STD_LOGIC;
+        led0_b : OUT STD_LOGIC;
 
         data : OUT STD_LOGIC_VECTOR(11 DOWNTO 0);
         ack : IN STD_LOGIC
@@ -28,6 +30,8 @@ ARCHITECTURE arch OF top_cmod_s7_25 IS
     SIGNAL ack_sync_reg : STD_LOGIC_VECTOR(2 DOWNTO 0) := (OTHERS => '0');
     ATTRIBUTE ASYNC_REG OF rst_sync_reg : SIGNAL IS "TRUE";
     ATTRIBUTE ASYNC_REG OF ack_sync_reg : SIGNAL IS "TRUE";
+
+    SIGNAL err : STD_LOGIC;
 BEGIN
     cmt_inst : cmt
     PORT MAP(
@@ -68,6 +72,11 @@ BEGIN
             rst => rst_sync_reg(2),
             data => data,
             ack => ack_sync_reg(2),
-            err => led0_r
+            err => err
         );
+
+    -- RGB led is active low
+    led0_r <= NOT err;
+    led0_g <= err;
+    led0_b <= '1';
 END ARCHITECTURE;
