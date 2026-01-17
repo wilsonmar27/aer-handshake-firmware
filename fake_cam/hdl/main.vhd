@@ -40,6 +40,10 @@ ARCHITECTURE arch OF main IS
         );
     END COMPONENT;
 
+    SIGNAL fifo_rst : STD_LOGIC;
+    SIGNAL main_rst : STD_LOGIC;
+    SIGNAL rst_cnt : NATURAL RANGE 0 TO 35 := 0;
+
     SIGNAL pixels : STD_LOGIC_VECTOR(IMG_X * IMG_Y - 1 DOWNTO 0);
 
     SIGNAL ball_bouncer_clk_en : STD_LOGIC;
@@ -62,8 +66,8 @@ ARCHITECTURE arch OF main IS
     SIGNAL fifo_dout : STD_LOGIC_VECTOR(5 DOWNTO 0);
 
     SIGNAL clk_div_cnt : NATURAL RANGE 0 TO BALL_BOUNCER_CLK_DIV - 1 := 0;
-    TYPE s_type IS (EVENTS, WAIT_FOR_EVENTS, WAIT_FOR_FRAME, FRAME, ERROR_STATE);
-    SIGNAL s : s_type := EVENTS;
+    TYPE s_type IS (FIFO_RESET, FIFO_NO_ACCESS, EVENTS, WAIT_FOR_EVENTS, WAIT_FOR_FRAME, FRAME, ERROR_STATE);
+    SIGNAL s : s_type := FIFO_RESET;
     SIGNAL s_next : s_type;
 BEGIN
     ball_bouncer : ENTITY work.ball_bouncer
@@ -77,7 +81,7 @@ BEGIN
         PORT MAP(
             clk => clk,
             clk_en => ball_bouncer_clk_en,
-            rst => rst,
+            rst => main_rst,
             arena => pixels
         );
     event_gen : ENTITY work.event_gen
@@ -88,7 +92,7 @@ BEGIN
         )
         PORT MAP(
             clk => clk,
-            rst => rst,
+            rst => main_rst,
             pixels => pixels,
             trg => event_gen_trg,
             px_idx => event_gen_px_idx,
@@ -112,7 +116,7 @@ BEGIN
         );
     fifo : fifo_words
     PORT MAP(
-        rst => rst,
+        rst => fifo_rst,
         wr_clk => clk,
         rd_clk => aer_clk,
         din => fifo_din,
@@ -127,7 +131,7 @@ BEGIN
     aer_consumer : ENTITY work.aer_consumer
         PORT MAP(
             clk => aer_clk,
-            rst => rst,
+            rst => main_rst,
             no_events => fifo_empty,
             ren => fifo_ren,
             event => fifo_dout,
@@ -135,8 +139,11 @@ BEGIN
             data => data
         );
 
-    PROCESS (s, clk_div_cnt, event_encoder_valid, fifo_full, event_gen_rdy)
+    PROCESS (s, rst_cnt, clk_div_cnt, event_encoder_valid, fifo_full, event_gen_rdy)
     BEGIN
+        fifo_rst <= '0';
+        main_rst <= '0';
+
         ball_bouncer_clk_en <= '0';
         event_gen_trg <= '0';
         fifo_wen <= '0';
@@ -144,6 +151,19 @@ BEGIN
         err <= '0';
 
         CASE s IS
+            WHEN FIFO_RESET =>
+                -- hold fifo reset for 5 cycles
+                fifo_rst <= '1';
+                main_rst <= '1';
+                IF rst_cnt = 5 THEN
+                    s_next <= FIFO_NO_ACCESS;
+                END IF;
+            WHEN FIFO_NO_ACCESS =>
+                -- and then, hold the rest of the system in reset for 30 cycles
+                main_rst <= '1';
+                IF rst_cnt = 35 THEN
+                    s_next <= EVENTS;
+                END IF;
             WHEN EVENTS =>
                 -- trigger event generator
                 event_gen_trg <= '1';
@@ -180,14 +200,21 @@ BEGIN
     PROCESS (clk, rst)
     BEGIN
         IF rst = '1' THEN
+            s <= FIFO_RESET;
+            rst_cnt <= 0;
             clk_div_cnt <= 0;
-            s <= EVENTS;
         ELSIF rising_edge(clk) THEN
-            -- always running counter for generating new frames at a steady rate
-            IF clk_div_cnt = BALL_BOUNCER_CLK_DIV - 1 THEN
-                clk_div_cnt <= 0;
+            IF s /= FIFO_RESET AND s /= FIFO_NO_ACCESS THEN
+                -- always running counter for generating new frames at a steady rate
+                IF clk_div_cnt = BALL_BOUNCER_CLK_DIV - 1 THEN
+                    clk_div_cnt <= 0;
+                ELSE
+                    clk_div_cnt <= clk_div_cnt + 1;
+                END IF;
             ELSE
-                clk_div_cnt <= clk_div_cnt + 1;
+                IF rst_cnt < 35 THEN
+                    rst_cnt <= rst_cnt + 1;
+                END IF;
             END IF;
 
             s <= s_next;
