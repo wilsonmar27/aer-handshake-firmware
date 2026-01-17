@@ -35,8 +35,8 @@ BEGIN
         sym_2 := to_integer(unsigned(event(5 DOWNTO 4)));
 
         tmp(sym_0) := '1';
-        tmp(sym_1) := '1';
-        tmp(sym_2) := '1';
+        tmp(sym_1 + 4) := '1';
+        tmp(sym_2 + 8) := '1';
 
         event_encoding <= tmp;
     END PROCESS;
