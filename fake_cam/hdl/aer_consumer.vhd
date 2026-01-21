@@ -19,7 +19,7 @@ END ENTITY;
 ARCHITECTURE arch OF aer_consumer IS
     SIGNAL event_encoding : STD_LOGIC_VECTOR(11 DOWNTO 0);
 
-    TYPE s_type IS (IDLE, WAIT_FOR_FIFO_READ, WAIT_FOR_ACK, WAIT_FOR_NACK);
+    TYPE s_type IS (IDLE, WAIT_FOR_FIFO_READ, WAIT_FOR_FIFO_OUTPUT, WAIT_FOR_ACK, WAIT_FOR_NACK);
     SIGNAL s : s_type := IDLE;
     SIGNAL s_next : s_type;
 BEGIN
@@ -55,6 +55,9 @@ BEGIN
                 END IF;
             WHEN WAIT_FOR_FIFO_READ =>
                 -- FIFO read data is ready later in the next cycle w.r.t. ren, thus wait for an extra cycle
+                s_next <= WAIT_FOR_FIFO_OUTPUT;
+            WHEN WAIT_FOR_FIFO_OUTPUT =>
+                -- FIFO embedded output register adds another cycle of delay
                 s_next <= WAIT_FOR_ACK;
             WHEN WAIT_FOR_ACK =>
                 data <= event_encoding;
