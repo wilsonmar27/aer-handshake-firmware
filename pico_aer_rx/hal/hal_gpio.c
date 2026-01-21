@@ -132,7 +132,7 @@ uint32_t hal_gpio_read_data_raw(void) {
 void hal_gpio_ack_write(bool asserted) {
     // Drive the physical pin to represent "asserted" according to polarity.
     const bool level = ack_level_for_asserted(asserted);
-    sio_write_pin(g_cfg.ack_pin, level);
+    gpio_put(g_cfg.ack_pin, level);
 }
 
 bool hal_gpio_ack_is_asserted(void) {
