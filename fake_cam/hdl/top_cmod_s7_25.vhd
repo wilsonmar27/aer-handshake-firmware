@@ -31,6 +31,11 @@ ARCHITECTURE arch OF top_cmod_s7_25 IS
     ATTRIBUTE ASYNC_REG OF rst_sync_reg : SIGNAL IS "TRUE";
     ATTRIBUTE ASYNC_REG OF ack_sync_reg : SIGNAL IS "TRUE";
 
+    -- debounce ack
+    CONSTANT ACK_SATURATE_MAX : NATURAL := 7;
+    SIGNAL ack_saturate_cnt : NATURAL RANGE 0 TO ACK_SATURATE_MAX;
+    SIGNAL ack_filtered : STD_LOGIC;
+
     SIGNAL err : STD_LOGIC;
 BEGIN
     cmt_inst : cmt
@@ -53,6 +58,20 @@ BEGIN
     BEGIN
         IF rising_edge(aer_clk) THEN
             ack_sync_reg <= ack_sync_reg(1 DOWNTO 0) & ack;
+
+            IF (ack_sync_reg(2) = '0') THEN
+                IF (ack_saturate_cnt /= 0) THEN
+                    ack_saturate_cnt <= ack_saturate_cnt - 1;
+                ELSE
+                    ack_filtered <= '0';
+                END IF;
+            ELSIF (ack_sync_reg(2) = '1') THEN
+                IF (ack_saturate_cnt /= ACK_SATURATE_MAX) THEN
+                    ack_saturate_cnt <= ack_saturate_cnt + 1;
+                ELSE
+                    ack_filtered <= '1';
+                END IF;
+            END IF;
         END IF;
     END PROCESS;
 
@@ -71,7 +90,7 @@ BEGIN
             aer_clk => aer_clk,
             rst => rst_sync_reg(2),
             data => data,
-            ack => ack_sync_reg(2),
+            ack => ack_filtered,
             err => err
         );
 
